@@ -2,6 +2,11 @@ require('dotenv').config();
 const app = require('./src/app');
 const { testConnection, initializeDatabase } = require('./src/config/db');
 
+console.log('--- RENDER ENVIRONMENT DIAGNOSTICS ---');
+console.log('Available ENV Keys:', Object.keys(process.env).filter(k => k.startsWith('DB_')));
+console.log('DB_HOST is currently:', process.env.DB_HOST || 'UNDEFINED! (Falling back to localhost)');
+console.log('----------------------------------------');
+
 const PORT = process.env.PORT || 3000;
 
 const startServer = async () => {
