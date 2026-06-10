@@ -1,0 +1,188 @@
+{
+  "info": {
+    "name": "GitHub Profile Analyzer API",
+    "description": "A collection of all API endpoints for the GitHub Profile Analyzer backend service.\n\n**Base URL:** http://localhost:3000\n\n**How to use:**\n1. Import this collection into Postman\n2. Make sure your server is running (`npm run dev`)\n3. Start with the Analyze endpoint to populate data, then use the others.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string",
+      "description": "Change this to your deployed URL when live"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/",
+          "host": ["{{base_url}}"],
+          "path": [""]
+        },
+        "description": "Check if the API server is running and see all available routes."
+      },
+      "response": []
+    },
+    {
+      "name": "Analyze Profile",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/github/analyze/octocat",
+          "host": ["{{base_url}}"],
+          "path": ["api", "github", "analyze", "octocat"]
+        },
+        "description": "Fetches a GitHub user's profile and repository data, computes insights (developer score, rank, account age, follower ratio), and stores everything in MySQL.\n\nChange 'octocat' in the URL to any GitHub username."
+      },
+      "response": [
+        {
+          "name": "Success - octocat",
+          "status": "OK",
+          "code": 200,
+          "body": "{\n  \"message\": \"Profile analyzed successfully\",\n  \"data\": {\n    \"username\": \"octocat\",\n    \"name\": \"The Octocat\",\n    \"followers\": 22905,\n    \"following\": 9,\n    \"public_repos\": 8,\n    \"total_stars\": 21531,\n    \"total_forks\": 164700,\n    \"most_starred_repo\": \"Spoon-Knife\",\n    \"developer_score\": 153489,\n    \"rank_level\": \"Advanced\",\n    \"account_age_years\": \"15.4\",\n    \"follower_ratio\": \"2545.00\",\n    \"account_created\": \"2011-01-25\"\n  }\n}"
+        },
+        {
+          "name": "Error - User Not Found",
+          "status": "Not Found",
+          "code": 404,
+          "body": "{\n  \"error\": \"GitHub user 'invaliduser123xyz' not found\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Analyze Profile - torvalds",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/github/analyze/torvalds",
+          "host": ["{{base_url}}"],
+          "path": ["api", "github", "analyze", "torvalds"]
+        },
+        "description": "Analyze Linus Torvalds (creator of Linux) GitHub profile."
+      },
+      "response": []
+    },
+    {
+      "name": "Analyze Profile - gaearon",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/github/analyze/gaearon",
+          "host": ["{{base_url}}"],
+          "path": ["api", "github", "analyze", "gaearon"]
+        },
+        "description": "Analyze Dan Abramov (creator of Redux) GitHub profile."
+      },
+      "response": []
+    },
+    {
+      "name": "Get All Profiles",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/github/profiles",
+          "host": ["{{base_url}}"],
+          "path": ["api", "github", "profiles"]
+        },
+        "description": "Returns all analyzed GitHub profiles stored in MySQL, sorted by developer score (highest first)."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "OK",
+          "code": 200,
+          "body": "{\n  \"count\": 1,\n  \"profiles\": [\n    {\n      \"username\": \"octocat\",\n      \"name\": \"The Octocat\",\n      \"followers\": 22905,\n      \"public_repos\": 8,\n      \"developer_score\": 153489,\n      \"rank_level\": \"Advanced\",\n      \"analyzed_at\": \"2024-01-01T12:00:00.000Z\"\n    }\n  ]\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get Single Profile",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/github/profiles/octocat",
+          "host": ["{{base_url}}"],
+          "path": ["api", "github", "profiles", "octocat"]
+        },
+        "description": "Returns full details of a single analyzed profile. Change 'octocat' to any username you've already analyzed."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "OK",
+          "code": 200,
+          "body": "{\n  \"id\": 1,\n  \"username\": \"octocat\",\n  \"name\": \"The Octocat\",\n  \"bio\": null,\n  \"location\": \"San Francisco, CA\",\n  \"followers\": 22905,\n  \"following\": 9,\n  \"public_repos\": 8,\n  \"total_stars\": 21531,\n  \"developer_score\": 153489,\n  \"rank_level\": \"Advanced\",\n  \"analyzed_at\": \"2024-01-01T12:00:00.000Z\"\n}"
+        },
+        {
+          "name": "Error - Not Analyzed Yet",
+          "status": "Not Found",
+          "code": 404,
+          "body": "{\n  \"error\": \"Profile for 'octocat' not found. Run POST /api/github/analyze/octocat first.\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Search Profiles",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/github/profiles/search?username=octo",
+          "host": ["{{base_url}}"],
+          "path": ["api", "github", "profiles", "search"],
+          "query": [
+            {
+              "key": "username",
+              "value": "octo",
+              "description": "Partial username or name to search for"
+            }
+          ]
+        },
+        "description": "Search for analyzed profiles by partial username or display name match."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "OK",
+          "code": 200,
+          "body": "{\n  \"query\": \"octo\",\n  \"count\": 1,\n  \"profiles\": [\n    {\n      \"username\": \"octocat\",\n      \"name\": \"The Octocat\",\n      \"developer_score\": 153489,\n      \"rank_level\": \"Advanced\"\n    }\n  ]\n}"
+        }
+      ]
+    },
+    {
+      "name": "Delete Profile",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/github/profiles/octocat",
+          "host": ["{{base_url}}"],
+          "path": ["api", "github", "profiles", "octocat"]
+        },
+        "description": "Removes a profile from the MySQL database. Change 'octocat' to the username you want to delete."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "OK",
+          "code": 200,
+          "body": "{\n  \"message\": \"Profile for 'octocat' deleted successfully\"\n}"
+        }
+      ]
+    }
+  ]
+}
