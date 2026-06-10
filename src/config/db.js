@@ -2,7 +2,7 @@ const mysql2 = require('mysql2/promise');
 require('dotenv').config();
 
 // Create a connection pool for better performance and reliability
-const pool = mysql2.createPool({
+const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
   port: process.env.DB_PORT || 3306,
   user: process.env.DB_USER || 'root',
@@ -12,7 +12,17 @@ const pool = mysql2.createPool({
   connectionLimit: 10,       // Max simultaneous connections in pool
   queueLimit: 0,             // Unlimited queued requests
   timezone: '+00:00',        // Store dates in UTC
-});
+};
+
+// Automatically enable SSL for Aiven or other cloud providers
+if (dbConfig.host && dbConfig.host.includes('.aivencloud.com') || process.env.NODE_ENV === 'production') {
+  dbConfig.ssl = {
+    rejectUnauthorized: false // Required for many managed DBs like Aiven if CA cert isn't provided
+  };
+}
+
+// Create a connection pool for better performance and reliability
+const pool = mysql2.createPool(dbConfig);
 
 /**
  * Initializes the database: creates the DB if missing, creates the table if missing.
@@ -20,18 +30,31 @@ const pool = mysql2.createPool({
  */
 const initializeDatabase = async () => {
   // First connect WITHOUT specifying a database to create it if needed
-  const initConnection = await mysql2.createConnection({
+  const initConfig = {
     host: process.env.DB_HOST || 'localhost',
     port: process.env.DB_PORT || 3306,
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
     timezone: '+00:00',
-  });
+  };
 
-  await initConnection.execute(
-    `CREATE DATABASE IF NOT EXISTS \`${process.env.DB_NAME || 'github_analyzer'}\``
-  );
-  await initConnection.end();
+  if (initConfig.host.includes('.aivencloud.com') || process.env.NODE_ENV === 'production') {
+    initConfig.ssl = { rejectUnauthorized: false };
+  }
+
+  const initConnection = await mysql2.createConnection(initConfig);
+
+  try {
+    // Some managed DBs (like Aiven) do not allow users to CREATE DATABASE.
+    // We wrap this in a try-catch so it doesn't crash the server if it fails.
+    await initConnection.execute(
+      `CREATE DATABASE IF NOT EXISTS \`${process.env.DB_NAME || 'github_analyzer'}\``
+    );
+  } catch (error) {
+    console.log(`⚠️ Skipping CREATE DATABASE: ${error.message} (This is normal for cloud databases like Aiven)`);
+  } finally {
+    await initConnection.end();
+  }
 
   // Now create the main table inside that database
   await pool.execute(`
@@ -71,11 +94,12 @@ const initializeDatabase = async () => {
 const testConnection = async () => {
   try {
     const connection = await pool.getConnection();
-    console.log('✅ MySQL connected successfully');
+    console.log(`✅ MySQL connected successfully to host: ${process.env.DB_HOST || 'localhost'}`);
     connection.release();
     return true;
   } catch (error) {
-    console.error('❌ MySQL connection failed:', error.message);
+    console.error('❌ MySQL connection failed to host:', process.env.DB_HOST || 'localhost');
+    console.error('Error Details:', error);
     throw error;
   }
 };
